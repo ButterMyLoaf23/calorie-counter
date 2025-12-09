@@ -1,3 +1,4 @@
+import { handleSearch } from "./usda-search";
 const FDC_API_kEY = "LKvyF2ZytpiArcxfkc4IxFrfiCiSUIyw6fMdX0j3"
 const FDC_SEARCH_URL = "https://api.nal.usda.gov/fdc/v1/foods/search"; GET
 
