@@ -164,8 +164,54 @@ function getNutrientValue(nutrients, name) {
     return nutrient ? nutrient.value : null;
 }
 
-function getNutrientValueBYId(nutrients, id) {
+function getNutrientValueById(nutrients, id) {
     if(!nutrients) return null;
     const nutrient = nutrients.find(nutrient => nutrient.nutrientName && nutrient.nutrient.id === id || nutrient.nutrientId === id);
     return nutrient ? (nutrient.value || nutrient.amount || null) : null;
 }
+
+function selectFoodFromFDC(f, calories, protein, carbs, fats){
+    document.getElementById('mealName').value = f.description;
+    document.getElementById('mealCalories').value = Math.round(calories);
+    document.getElementById('mealProtein').value = Math.round(protein);
+    document.getElementById('mealCarbs').value = Math.round(carbs);
+    document.getElementById('mealFats').value = Math.round(fats);
+}
+
+//function that updates the charts
+function updateCharts() {
+    //Macro pie chart
+    const totals = meals.reduce((acc, meal) => {
+        acc.calories += meal.calories; 
+        acc.protein += meal.protein;
+        acc.carbs += meal.carbs;
+        acc.fats += meal.fats;
+        return acc;
+    }, { calories: 0, protein: 0, carbs: 0, fats: 0});
+        
+    if(macroPieChart){
+        macroPieChart.data.datasets[0].data = [
+            totals.protein,
+            totals.carbs, 
+            totals.fats
+        ];
+        macroPieChart.update();
+    }
+
+        //Weekly calories chart
+        const labels = [];
+        const weeklyData = [];
+        for(let i = 6; i >= 0; i--){
+            const data = new Date();
+            data.setDate(data.getDate() - i);
+            const key = data.toISOString().slice(0,10);
+            labels.push(key);
+            weeklyData.push(weeklyCalories[key] || 0);
+        }
+
+        if(weeklyChart) {
+            weeklyChart.data.labels = labels;
+            weeklyCharts.data.datasets[0].data = weeklyData;
+            weeklyChart.update();
+        }
+};
