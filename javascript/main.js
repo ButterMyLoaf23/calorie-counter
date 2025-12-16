@@ -1,4 +1,4 @@
-import { handleSearch } from "./usda-search";
+import { getNutrientValueById, handleSearch } from "./usda-search";
 const FDC_API_kEY = "LKvyF2ZytpiArcxfkc4IxFrfiCiSUIyw6fMdX0j3"
 const FDC_SEARCH_URL = "https://api.nal.usda.gov/fdc/v1/foods/search"; GET
 
@@ -135,3 +135,25 @@ async function handleSearch() {
     }
 }
 
+    foods.forEach(f => {
+        const item =document.createElement('div');
+        item.className = 'meal';
+        const calories = getNutrientValue(f.foodNutrients, 'Energy') || getNutrientValueById(f.foodnutrients, 1008) || 0;
+        const protein = getNutrientValue (f.foodNutrients, 'Protein') || getNutrientValueByld(f.foodNutrients, 1003) || 0;
+        const carbs = getNutrientValue(f.foodNutrients, 'Carbohydrate') || getNutrientValueById(f.foodNutrients, 1005) || 0;
+        const fats = getNutrientValue(f.foodNutrients, 'Fats') || getNutrientValueById(f.foodNutrients, 1004) || 0;
+
+        item.innerHTML =
+        `<div>
+            <strong>${f.description}</strong>
+            <small> FDC ID: ${f.fdcId} * ${f.dataType || ''}</small></div>
+            <div>
+                ${Math.round(calories)} kcal
+                Protein: ${Math.round(protein)}g
+                Carbs: ${Math.round(carbs)}g
+                Fats: ${Math.round(fats)}g
+            </div>`;
+
+            item.onclick = () => selectFoodFromFDC(f, calories, protein, carbs, fats);
+            searchResults.appendChild(item);
+    });  
