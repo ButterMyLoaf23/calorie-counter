@@ -111,4 +111,27 @@ function todayString() {
 // USDA Search Function
 async function handleSearch() {
     const query = searchInput.value.trim();
+    searchResults.innerHTML = '';
+    if(!query) return;
+
+    try{
+        const url = `https://api.nal.usda.gov/fdc/v1/foods/search}?query=${encodeURIComponent(query)}&pageSize=10&api_key=${FDC_API_kEY}`;
+
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error("USDA API request failed");
+        }
+
+        const data = await response.json();
+
+        data.foods.forEach(food => {
+            const div = document.createElement('div');
+            div.textContent = food.description;
+            searchResults.appendChild(div);
+        });
+    } catch (error) {
+        console.error(error);
+        searchResults.textContent = "Error fetching food data";
+    }
 }
+
