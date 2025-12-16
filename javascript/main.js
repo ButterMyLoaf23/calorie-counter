@@ -215,3 +215,11 @@ function updateCharts() {
             weeklyChart.update();
         }
 };
+
+function debounce (func, wait) {
+    let t;
+    return function(...args){ clearTimeout(t); t=setTimeout(() => func.apply(this, args), wait); }
+}
+
+renderMeals();
+updateCharts();
