@@ -135,25 +135,37 @@ async function handleSearch() {
     }
 }
 
-    foods.forEach(f => {
-        const item =document.createElement('div');
-        item.className = 'meal';
-        const calories = getNutrientValue(f.foodNutrients, 'Energy') || getNutrientValueById(f.foodnutrients, 1008) || 0;
-        const protein = getNutrientValue (f.foodNutrients, 'Protein') || getNutrientValueByld(f.foodNutrients, 1003) || 0;
-        const carbs = getNutrientValue(f.foodNutrients, 'Carbohydrate') || getNutrientValueById(f.foodNutrients, 1005) || 0;
-        const fats = getNutrientValue(f.foodNutrients, 'Fats') || getNutrientValueById(f.foodNutrients, 1004) || 0;
+foods.forEach(f => {
+    const item =document.createElement('div');
+    item.className = 'meal';
+    const calories = getNutrientValue(f.foodNutrients, 'Energy') || getNutrientValueById(f.foodnutrients, 1008) || 0;
+    const protein = getNutrientValue (f.foodNutrients, 'Protein') || getNutrientValueByld(f.foodNutrients, 1003) || 0;
+    const carbs = getNutrientValue(f.foodNutrients, 'Carbohydrate') || getNutrientValueById(f.foodNutrients, 1005) || 0;
+    const fats = getNutrientValue(f.foodNutrients, 'Fats') || getNutrientValueById(f.foodNutrients, 1004) || 0;
 
-        item.innerHTML =
-        `<div>
-            <strong>${f.description}</strong>
-            <small> FDC ID: ${f.fdcId} * ${f.dataType || ''}</small></div>
-            <div>
-                ${Math.round(calories)} kcal
-                Protein: ${Math.round(protein)}g
-                Carbs: ${Math.round(carbs)}g
-                Fats: ${Math.round(fats)}g
-            </div>`;
+    item.innerHTML =
+    `<div>
+        <strong>${f.description}</strong>
+        <small> FDC ID: ${f.fdcId} * ${f.dataType || ''}</small></div>
+        <div>
+            ${Math.round(calories)} kcal
+            Protein: ${Math.round(protein)}g
+            Carbs: ${Math.round(carbs)}g
+            Fats: ${Math.round(fats)}g
+        </div>`;
 
-            item.onclick = () => selectFoodFromFDC(f, calories, protein, carbs, fats);
-            searchResults.appendChild(item);
-    });  
+        item.onclick = () => selectFoodFromFDC(f, calories, protein, carbs, fats);
+        searchResults.appendChild(item);
+});  
+
+function getNutrientValue(nutrients, name) {
+    if (!nutrients) return null;
+    const nutirient =nutrients.find(nutrient => nutrient.nutrientName && nutrient.nutrientName.toLowerCase().includes(name.toLowerCase()));
+    return nutrient ? nutrient.value : null;
+}
+
+function getNutrientValueBYId(nutrients, id) {
+    if(!nutrients) return null;
+    const nutrient = nutrients.find(nutrient => nutrient.nutrientName && nutrient.nutrient.id === id || nutrient.nutrientId === id);
+    return nutrient ? (nutrient.value || nutrient.amount || null) : null;
+}
