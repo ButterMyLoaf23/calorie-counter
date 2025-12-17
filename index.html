@@ -5,58 +5,73 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calorie & Macro Tracker</title>
     <link rel="stylesheet" href="/css/styles.css"/>
-    <script type="module" src="/javascript/main.js"></script>
 </head>
 <body>
     <header>Calorie & Macro Tracker</header>
 
+    <section>
+        <h2>Search Food Databases</h2>
+        <input
+            id="searchInput"
+            type="text"
+            placeholder="Search for foods"
+            autocomplete="off"
+        />
+        <div id="searchResults"></div>
+    </section>
+    <section>
+        <h2>Add Meal</h2>
 
-    <div class="container">
-        <div class="top-row"></div>
-            <div>
-                <h2>Add a Meal</h2>
-                <label>Meal Name</label>
-                <input type="text" id="mealName" placeholder="e.g., Chicken Salad" />
+        <form id="mealForm">
+            <input id="mealName" placeholder="Meal name" required />
 
+            <input
+                id="mealCalories"
+                type="number"
+                placeholder="Calories"
+                required
+            />
 
-                <label>Calories</label>
-                <input type="number" id="mealCalories" placeholder="e.g., 450" />
+            <input
+                id="mealProtein"
+                type="number"
+                placeholder="Protein (g)"
+                required
+            />
 
-                <h3>Macros</h3>
-                <label>Protein</label>
-                <input type="number" id="mealProtein" placeholder="30g">
+            <input
+                id="mealCarbs"
+                type="number"
+                placeholder="Carbs (g)"
+                required
+            />
 
-                <label>Carbs</label>
-                <input type="number" id="mealCarbs" placeholder="45g">
+            <input
+                id="mealFats"
+                type="number"
+                placeholder="Fats (g)"
+                required
+            />
 
-                <label>Fats</label>
-                <input type="number" id="mealFats" placeholder="10g">
-
-                <button id="addBtn">Add Meal</button>
-
-                <h2>Food Search</h2>
-                <input type="text" id="searchInput" placeholder="Search foods" onkeyup="searchFood()"/>
-                <div id="searchResults" class="search-results"></div>
-            </div>
-
-            <aside class="summary">
-                <h2>Today's Summary</h2>
-                <p><strong>Total Calories:</strong><span id="totalCalories">0</span> kcal</p>
-                <p id="totalMacros">Protein: 0g | Carbs: 0g | Fats: 0g</p>
-
-                <h3>Macro Breakdown</h3>
-                <canvas id="macroPie" width="300" height="200"></canvas>
-
-                <h3>Weekly Chart</h3>
-                <canvas id="weeklyChart" width="300" height="200"></canvas>
-            </aside>
-        </div>
-
-        <h2>Logged Meals</h2>
-        <div class="meal-list" id="mealList"></div>
-    </div>
+            <button type="submit">Add meal</button>
+        </form>
+    </section>
+    <section>
+        <h2>Meals This Week</h2>
+        <div id="mealList"></div>
+    </section>
+    <section>
+        <h2>Macros Breakdown</h2>
+        <canvas id="macroChart"></canvas>
+    </section>
+    <section>
+        <h2>Calories This Week</h2>
+        <canvas id="weeklyChart"></canvas>
+    </section>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script type="module" src="./javascript/main.js"></script>
     
 </body>
 </html>

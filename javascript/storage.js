@@ -5,7 +5,7 @@ export function loadMeals() {
 }
 
 export function saveMeals(meals) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(melas));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(meals));
 }
 
 export function buildWeeklyCalories(meals) {

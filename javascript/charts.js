@@ -10,7 +10,7 @@ export function initCharts(pieCht, weeklyCht) {
         }
     });
     
-        weeklyChart = new CHart (weeklyCht, {
+        weeklyChart = new Chart (weeklyCht, {
         type: "bar",
         data: {
             labels: [],

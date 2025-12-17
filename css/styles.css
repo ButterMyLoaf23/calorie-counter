@@ -96,6 +96,12 @@ button:hover {
     background: white;
 }
 
+#macroChart {
+    max-width: 300px;
+    max-height: 300px;
+    margin: 0 auto;
+}
+
 @media (max-width: 700px) {
     .container {
         padding: 15px;
