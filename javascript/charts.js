@@ -7,6 +7,14 @@ export function initCharts(pieCht, weeklyCht) {
         data: {
             labels: ["Protein", "Carbs", "Fats"],
             datasets: [{data: [0, 0, 0]}]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position : "bottom" }
+            }
+        
         }
     });
     
@@ -15,6 +23,10 @@ export function initCharts(pieCht, weeklyCht) {
         data: {
             labels: [],
             datasets: [{label: "Calories", data: [] }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
         }
     });
 }

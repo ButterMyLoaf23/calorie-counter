@@ -11,6 +11,14 @@
 
     <section>
         <h2>Search Food Databases</h2>
+
+        <label for = "foodTypeFilter">Food type</label>
+        <select id="foodTypeFilter">
+            <option value="all">All</option>
+            <option value="Branded">Branded</option>
+            <option value=" Restaurant">Restaurant</option>
+        </select>
+
         <input
             id="searchInput"
             type="text"
@@ -60,11 +68,13 @@
         <h2>Meals This Week</h2>
         <div id="mealList"></div>
     </section>
-    <section>
+    <section class="chart-card">
         <h2>Macros Breakdown</h2>
-        <canvas id="macroChart"></canvas>
+        <div class="chart-wrap chart-pie">
+            <canvas id="macroChart"></canvas>
+        </div>
     </section>
-    <section>
+    <section class="chart-card"> 
         <h2>Calories This Week</h2>
         <input
         id="calorieGoal"
@@ -72,7 +82,9 @@
         placeholder="Daily Calorie Goal"
         />
         <div id="goalStatus"></div>
-        <canvas id="weeklyChart"></canvas>
+        <div class="chart-wrap chart-line">
+            <canvas id="weeklyChart"></canvas>
+        </div>
     </section>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

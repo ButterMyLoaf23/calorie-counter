@@ -15,66 +15,107 @@ const mealProtein = document.getElementById("mealProtein");
 const mealCarbs = document.getElementById("mealCarbs");
 const mealFats = document.getElementById("mealFats");
 
-const pieCtx = document.getElementById("macroChart").getContext("2d");
-const weeklyCtx = document.getElementById("weeklyChart").getContext("2d");
+const macroCanvas = document.getElementById("macroChart");
+const weeklyCanvas = document.getElementById("weeklyChart");
+
+const pieCht = macroCanvas ? macroCanvas.getContext("2d") : null;
+const weeklyCht = weeklyCanvas ? weeklyCanvas.getContext("2d") : null;
 
 
 let meals = loadMeals();
 let weeklyCalories = buildWeeklyCalories(meals);
 
-
-initCharts(pieCtx, weeklyCtx);
-renderMeals();
+if (pieCht && weeklyCht) {
+initCharts(pieCht, weeklyCht);
 updateCharts(meals, weeklyCalories);
+}
+renderMeals();
 
+
+const foodTypeFilter = document.getElementById("foodTypeFilter");
 
 async function handleSearch() {
   const query = searchInput.value.trim();
   searchResults.innerHTML = "";
   if (!query) return;
 
+  const qLower = query.toLowerCase();
+  const typeChoice = foodTypeFilter ? foodTypeFilter.value : "all";
+
   try {
     const foods = await searchFoods(query);
 
-    foods.forEach(food => {
-      const div = document.createElement("div");
-      div.className = "search-result-item";
-      div.innerHTML = `
-        <div class="search-result-title">${food.description}</div>
-        <div class="search-result-sub">Click to load calories + macros</div>
+    let filtered = foods.filter(f => {
+      const desc = (f.description || "").toLowerCase();
+      if (qLower.includes("sandwich") && desc.includes("ice cream")) return false;
+      return true;
+    });
+
+    filtered = filtered.filter(f => {
+      const dt = (f.dataType || "").toLowerCase();
+
+      if (typeChoice === "packaged") {
+        return dt.includes("branded");
+      }
+
+      if (typeChoice === "restaurant") {
+        return dt.includes("survey");
+      }
+
+      return true;
+    });
+
+    for (const food of filtered) {
+      const card = document.createElement("div");
+      card.className = "search-result-item";
+
+      const title = food.description || "Unknown food";
+      const brand = food.brandOwner || food.brandName || "";
+      const type = food.dataType || "";
+
+      card.innerHTML = `
+        <div class="sr-top">
+          <div class="sr-title">${title}</div>
+          <div class="sr-badge">${type}</div>
+        </div>
+        <div class="sr-meta">${brand ? brand : "USDA FoodData Central"}</div>
+        <div class="sr-nutrition loading">Loading nutrition…</div>
       `;
 
-      div.onclick = async () => {
-        try {
-          const details = await getFoodDetails(food.fdcId);
+      searchResults.appendChild(card);
+
+      getFoodDetails(food.fdcId)
+        .then(details => {
           const n = details.foodNutrients || [];
-
           const protein = getNutrientValueById(n, 1003);
-          const carbs   = getNutrientValueById(n, 1005);
-          const fats    = getNutrientValueById(n, 1004);
-          const energy  = getNutrientValueById(n, 1008);
-
-          // If energy missing, estimate from macros
+          const carbs = getNutrientValueById(n, 1005);
+          const fats = getNutrientValueById(n, 1004);
+          const energy = getNutrientValueById(n, 1008);
           const calories = energy || (protein * 4 + carbs * 4 + fats * 9);
 
-          mealName.value = details.description || food.description;
-          mealCalories.value = Math.round(calories);
-          mealProtein.value = Math.round(protein);
-          mealCarbs.value = Math.round(carbs);
-          mealFats.value = Math.round(fats);
+          const nutLine = card.querySelector(".sr-nutrition");
+          nutLine.classList.remove("loading");
+          nutLine.textContent =
+            `${Math.round(calories)} kcal • Protein:${Math.round(protein)}g Carbs:${Math.round(carbs)}g Fats:${Math.round(fats)}g`;
 
-          searchResults.innerHTML = "";
-        } catch (err) {
+          card.onclick = () => {
+            mealName.value = details.description || title;
+            mealCalories.value = Math.round(calories);
+            mealProtein.value = Math.round(protein);
+            mealCarbs.value = Math.round(carbs);
+            mealFats.value = Math.round(fats);
+          };
+        })
+        .catch(err => {
           console.error(err);
-          alert("Could not load nutrition details for that item.");
-        }
-      };
-
-      searchResults.appendChild(div);
-    });
+          const nutLine = card.querySelector(".sr-nutrition");
+          nutLine.classList.remove("loading");
+          nutLine.textContent = "Nutrition unavailable for this item.";
+        });
+    }
   } catch (err) {
     console.error(err);
-    searchResults.textContent = "Error searching foods (check your API key).";
+    searchResults.textContent = "Search failed (check API key).";
   }
 }
 
