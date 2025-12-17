@@ -1,3 +1,8 @@
+import { searchFoods } from "./api.js";
+
+const searchInput = document.getElementById("searchInput");
+const searchResults = document.getElementById("searchResults");
+
 export async function handleSearch() {
     const query = searchInput.value.trim();
     searchResults.innerHTML = "";
