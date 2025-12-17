@@ -86,6 +86,44 @@ button:hover {
     font-size: 1.1rem;
 }
 
+#searchResults {
+    margin-top: 12px;
+    max-height: 320px;
+    overflow-y: auto;
+    padding-right: 6px;
+}
+
+.search-item {
+    padding: 12px 14px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    background: grey;
+    border: 1px solid black;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.12s ease, box-shadow 0.2s ease;
+}
+
+.search-item:hover {
+    background: lightgrey;
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.search-item:active {
+    transform: scale(0.98);
+}
+
+.search-title {
+    font-weight: bold;
+    font-size: 1rem;
+    margin-bottom: 4px;
+}
+
+.search-result {
+    font-size: 0.9rem;
+    color: #555;
+}
+
 #searchResults .meal {
     cursor: pointer;
     background: white;

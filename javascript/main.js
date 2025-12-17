@@ -45,8 +45,9 @@ async function handleSearch() {
       const div = document.createElement("div");
       div.className = "search-item";
       div.innerHTML = `
-        <strong>${food.description}</strong>
-        <div>${Math.round(calories)} kcal</div>
+        <div class="search-title">${food.description}</div>
+        <div class="search-results">
+        ${Math.round(calories)} kcal * Protein: ${Math.round(protein)}g Carbs: ${Math.round(carbs)}g Fats: ${Math.round(fats)}g</div>
       `;
 
       div.onclick = () => {
@@ -118,12 +119,35 @@ function renderMeals() {
           Fats: ${meal.fats}g
         </div>
       </div>
-      <button>Delete</button>
+      
+      <div class="meal-actions">
+        <button class="edit-btn">Edit</button>
+        <button class="delete-btn">Delete</button>
+        </div>
     `;
 
-    div.querySelector("button").onclick = () => deleteMeal(index);
+    div.querySelector(".edit-btn").onclick = () => editMeal(index);
+
+    div.querySelector(".delete-btn").onclick = () => deleteMeal(index);
     mealList.appendChild(div);
   });
+}
+
+function editMeal(index) {
+    const meal = meals[index];
+
+    mealName.value = meal.name;
+    mealCalories.value = meal.calories;
+    mealProtein.value = meal.protein;
+    mealCarbs.value = meal.carbs;
+    mealFats.value = meal.fats;
+
+    meals.splice(index, 1);
+    saveMeals(meals);
+    weeklyCalories = buildWeeklyCalories(meals);
+
+    renderMeals();
+    updateCharts(meals, weeklyCalories);
 }
 
 
@@ -133,4 +157,27 @@ function deleteMeal(index) {
   weeklyCalories = buildWeeklyCalories(meals);
   renderMeals();
   updateCharts(meals, weeklyCalories);
+}
+
+const calorieGoalInput = document.getElementById("calorieGoal");
+const goalStatus = document.getElementById("goalStatus");
+
+calorieGoalInput.value = localStorage.getItem("goal") || "";
+
+calorieGoalInput.addEventListener("change", () => {
+    localStorage.setItem("goal", calorieGoalInput.value);
+    updateGoal();
+});
+
+function updateGoal() {
+    const goal = Number(calorieGoalInput.value);
+    if (!goal) return;
+
+    const today = new Date().toISOString().slice(0, 10);
+    const consumed = weeklyCalories[today] || 0;
+
+    goalStatus.textContent = 
+    consumed > goal
+        ? `Over goal by ${consumed - goals} kcal`
+        : `${goal - consumed} kcal remaining`;
 }

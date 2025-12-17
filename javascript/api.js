@@ -1,7 +1,7 @@
 const FDC_API_KEY = "M58DZg98f89I7sid2hxfeXHBgEVNltDkp7gtBl48";
 
 export async function searchFoods(query) {
-    const url = `https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(query)}&pageSize=10&api_key=${M58DZg98f89I7sid2hxfeXHBgEVNltDkp7gtBl48}`;
+    const url = `https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(query)}&pageSize=10&api_key=${FDC_API_KEY}`;
 
     const response = await fetch(url);
     if (!response.ok) throw new Error ("API failed");
