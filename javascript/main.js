@@ -1,4 +1,4 @@
-import { searchFoods, getNutrientValue } from "./api.js";
+import { searchFoods, getFoodDetails, getNutrientValueById } from "./api.js";
 import { initCharts, updateCharts } from "./charts.js";
 import { loadMeals, saveMeals, buildWeeklyCalories } from "./storage.js";
 
@@ -37,33 +37,44 @@ async function handleSearch() {
     const foods = await searchFoods(query);
 
     foods.forEach(food => {
-      const calories = getNutrientValue(food.foodNutrients, 1008) || 0;
-      const protein  = getNutrientValue(food.foodNutrients, 1003) || 0;
-      const carbs    = getNutrientValue(food.foodNutrients, 1005) || 0;
-      const fats     = getNutrientValue(food.foodNutrients, 1004) || 0;
-
       const div = document.createElement("div");
-      div.className = "search-item";
+      div.className = "search-result-item";
       div.innerHTML = `
-        <div class="search-title">${food.description}</div>
-        <div class="search-results">
-        ${Math.round(calories)} kcal * Protein: ${Math.round(protein)}g Carbs: ${Math.round(carbs)}g Fats: ${Math.round(fats)}g</div>
+        <div class="search-result-title">${food.description}</div>
+        <div class="search-result-sub">Click to load calories + macros</div>
       `;
 
-      div.onclick = () => {
-        mealName.value = food.description;
-        mealCalories.value = Math.round(calories);
-        mealProtein.value = Math.round(protein);
-        mealCarbs.value = Math.round(carbs);
-        mealFats.value = Math.round(fats);
-        searchResults.innerHTML = "";
+      div.onclick = async () => {
+        try {
+          const details = await getFoodDetails(food.fdcId);
+          const n = details.foodNutrients || [];
+
+          const protein = getNutrientValueById(n, 1003);
+          const carbs   = getNutrientValueById(n, 1005);
+          const fats    = getNutrientValueById(n, 1004);
+          const energy  = getNutrientValueById(n, 1008);
+
+          // If energy missing, estimate from macros
+          const calories = energy || (protein * 4 + carbs * 4 + fats * 9);
+
+          mealName.value = details.description || food.description;
+          mealCalories.value = Math.round(calories);
+          mealProtein.value = Math.round(protein);
+          mealCarbs.value = Math.round(carbs);
+          mealFats.value = Math.round(fats);
+
+          searchResults.innerHTML = "";
+        } catch (err) {
+          console.error(err);
+          alert("Could not load nutrition details for that item.");
+        }
       };
 
       searchResults.appendChild(div);
     });
   } catch (err) {
     console.error(err);
-    searchResults.textContent = "Error fetching food data.";
+    searchResults.textContent = "Error searching foods (check your API key).";
   }
 }
 
@@ -178,6 +189,6 @@ function updateGoal() {
 
     goalStatus.textContent = 
     consumed > goal
-        ? `Over goal by ${consumed - goals} kcal`
+        ? `Over goal by ${consumed - goal} kcal`
         : `${goal - consumed} kcal remaining`;
 }

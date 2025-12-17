@@ -10,7 +10,16 @@ export async function searchFoods(query) {
     return data.foods || [];
 }
 
-export function getNutrientValue(nutrients, id) {
-    const nutrient = nutrients.find(nuntrients => nutrients.nutrientId === id);
-    return nutrient ? nutrient.value : 0;
+export async function getFoodDetails(fdcId) {
+    const url = `https://api.nal.usda.gov/fdc/v1/food/${fdcId}?api_key=${encodeURIComponent(FDC_API_KEY)}`;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("API Failed");
+    return await response.json();
+}
+
+export function getNutrientValueById(nutrients, id) {
+    if (!Array.isArray(nutrients)) return 0;
+
+    const found = nutrients.find(nutrients => nutrients.nutrientId === id || nutrients.nutrient?.id === id || nutrients.nutrient?.number === String(id));
+    return Number(found?.value ?? found?.amount ?? 0) || 0;
 }

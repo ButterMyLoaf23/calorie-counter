@@ -44,6 +44,6 @@ export function selectFoodFromFDC(f, calories, protein, carbs, fats){
     document.getElementById('mealName').value = f.description;
     document.getElementById('mealCalories').value = Math.round(calories);
     document.getElementById('MealProtein').value = Math.round(protein);
-    document.getElementById('mealCCarbs').value = Math.round(carbs);
+    document.getElementById('mealCarbs').value = Math.round(carbs);
     document.getElementById('mealFats').value = Math.round(fats);
 }
