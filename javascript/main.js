@@ -21,9 +21,17 @@ const weeklyCanvas = document.getElementById("weeklyChart");
 const pieCht = macroCanvas ? macroCanvas.getContext("2d") : null;
 const weeklyCht = weeklyCanvas ? weeklyCanvas.getContext("2d") : null;
 
+const calorieGoalInput = document.getElementById("calorieGoal");
+const goalStatus = document.getElementById("goalStatus");
 
 let meals = loadMeals();
 let weeklyCalories = buildWeeklyCalories(meals);
+
+if (document.getElementById("calorieGoal")) {
+  document.getElementById("calorieGoal").value =
+    localStorage.getItem("goal") || "";
+}
+updateGoal();
 
 if (pieCht && weeklyCht) {
 initCharts(pieCht, weeklyCht);
@@ -149,6 +157,7 @@ mealForm.addEventListener("submit", e => {
 
   renderMeals();
   updateCharts(meals, weeklyCalories);
+  updateGoal();
 
   mealForm.reset();
 });
@@ -200,36 +209,40 @@ function editMeal(index) {
 
     renderMeals();
     updateCharts(meals, weeklyCalories);
+    updateGoal();
 }
 
 
 function deleteMeal(index) {
-  meals.splice(index, 1);
-  saveMeals(meals);
-  weeklyCalories = buildWeeklyCalories(meals);
-  renderMeals();
-  updateCharts(meals, weeklyCalories);
+    meals.splice(index, 1);
+    saveMeals(meals);
+    weeklyCalories = buildWeeklyCalories(meals);
+    renderMeals();
+    updateCharts(meals, weeklyCalories);
+    updateGoal();
 }
 
-const calorieGoalInput = document.getElementById("calorieGoal");
-const goalStatus = document.getElementById("goalStatus");
+function updateGoal() {
+  if (!calorieGoalInput || !goalStatus) return;
 
-calorieGoalInput.value = localStorage.getItem("goal") || "";
+  const goal = Number(calorieGoalInput.value);
+  if (!goal) {
+    goalStatus.textContent = "";
+    return;
+  }
 
-calorieGoalInput.addEventListener("change", () => {
+  const today = new Date().toISOString().slice(0, 10);
+  const consumed = weeklyCalories[today] || 0;
+
+  goalStatus.textContent =
+    consumed > goal
+      ? `Over goal by ${consumed - goal} kcal`
+      : `${goal - consumed} kcal remaining`;
+}
+
+if (calorieGoalInput) {
+  calorieGoalInput.addEventListener("change", () => {
     localStorage.setItem("goal", calorieGoalInput.value);
     updateGoal();
-});
-
-function updateGoal() {
-    const goal = Number(calorieGoalInput.value);
-    if (!goal) return;
-
-    const today = new Date().toISOString().slice(0, 10);
-    const consumed = weeklyCalories[today] || 0;
-
-    goalStatus.textContent = 
-    consumed > goal
-        ? `Over goal by ${consumed - goal} kcal`
-        : `${goal - consumed} kcal remaining`;
+  });
 }
