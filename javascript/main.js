@@ -1,248 +1,39 @@
-import { searchFoods, getFoodDetails, getNutrientValueById } from "./api.js";
+import { createAccount, signIn, signOut, getCurrentAccount, saveCurrentAccount, loadMeals, saveMeals, buildTotals, getDateTotals, getRangeDates, todayKey, calculateNeeds } from "./storage.js";
 import { initCharts, updateCharts } from "./charts.js";
-import { loadMeals, saveMeals, buildWeeklyCalories } from "./storage.js";
+import { mealLibrary } from "./meal-library.js";
+import { searchFoods, getNutrientValueById } from "./api.js";
 
+const $ = id => document.getElementById(id); let account; let meals = []; let chartRange = "week"; let editingId = null;
+const authView = $("authView"); const appView = $("appView"); const authForm = $("authForm"); let signInMode = false; $("editGoal").insertAdjacentHTML("beforebegin", `<div class="goal-row"><span>Fiber</span><strong id="goalFiber">28g</strong></div><div class="goal-row"><span>Sat. fat</span><strong id="goalSaturatedFat">22g</strong></div><div class="goal-row"><span>Sodium max</span><strong id="goalSodium">2,300mg</strong></div><div class="goal-row"><span>Sugar max</span><strong id="goalSugar">50g</strong></div>`);
+$("profileForm").querySelector(".input-grid")?.remove(); $("profileForm").querySelector("button[type=submit]")?.remove(); $("profileForm").insertAdjacentHTML("beforeend", `<button type="submit">Save account settings</button>`);
+$("needsForm").insertAdjacentHTML("afterbegin", `<div class="profile-grid"><label>Age<input id="profileAge" type="number" min="13" max="120" required></label><label>Gender<select id="profileGender"><option value="female">Female</option><option value="male">Male</option><option value="other">Other / prefer not to say</option></select></label><label>Height (ft)<input id="profileHeightFt" type="number" min="3" max="8" required></label><label>Height (in)<input id="profileHeightIn" type="number" min="0" max="11.99" step="0.1" required></label><label>Weight (lb)<input id="profileWeightLb" type="number" min="66" max="770" step="0.1" required></label></div><label>Activity level<select id="profileActivity"><option value="sedentary">Sedentary — little exercise</option><option value="light">Light — 1–3 days/week</option><option value="moderate">Moderate — 3–5 days/week</option><option value="very">Very active — 6–7 days/week</option><option value="athlete">Athlete — hard training</option></select></label><label>Goal<select id="profileGoal"><option value="lose">Lose weight</option><option value="maintain">Maintain weight</option><option value="gain">Gain weight</option></select></label><p class="helper-text">Height and weight use the imperial system. These estimates use the Mifflin–St Jeor equation and are starting points.</p>`);
+$("mealForm").querySelector(".input-grid").insertAdjacentHTML("beforeend", `<label>Fiber (g)<input id="mealFiber" type="number" min="0" step="0.1" value="0"></label><label>Sat. fat (g)<input id="mealSaturatedFat" type="number" min="0" step="0.1" value="0"></label><label>Sodium (mg)<input id="mealSodium" type="number" min="0" step="1" value="0"></label><label>Sugar (g)<input id="mealSugar" type="number" min="0" step="0.1" value="0"></label>`);
+function showAuth() { authView.classList.remove("hidden"); appView.classList.add("hidden"); $("mealLibrary").classList.add("hidden"); }
+function showApp() { authView.classList.add("hidden"); appView.classList.remove("hidden"); $("mealLibrary").classList.remove("hidden"); account = getCurrentAccount(); meals = loadMeals(); $("accountEmail").textContent = account.email; $("accountName").textContent = account.name; $("todayLabel").textContent = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" }); initCharts(); render(); renderLibrary(); setupUSDA(); }
 
-const searchInput = document.getElementById("searchInput");
-const searchResults = document.getElementById("searchResults");
+$("authToggle").onclick = () => { signInMode = !signInMode; $("usernameField").classList.toggle("hidden", signInMode); $("authUsername").required = !signInMode; $("authSubmit").textContent = signInMode ? "Sign in" : "Create account"; $("authToggle").textContent = signInMode ? "New here? Create an account" : "Already have an account? Sign in"; $("authMessage").textContent = ""; };
+authForm.onsubmit = event => { event.preventDefault(); try { const fn = signInMode ? signIn : createAccount; if ($("authPassword").value.length < 8) throw new Error("Password must be at least 8 characters."); signInMode ? fn($("authEmail").value, $("authPassword").value) : fn($("authEmail").value, $("authPassword").value, $("authUsername").value); showApp(); authForm.reset(); } catch (error) { $("authMessage").textContent = error.message; } };
+$("signOut").onclick = () => { signOut(); showAuth(); };
 
-const mealForm = document.getElementById("mealForm");
-const mealList = document.getElementById("mealList");
-
-const mealName = document.getElementById("mealName");
-const mealCalories = document.getElementById("mealCalories");
-const mealProtein = document.getElementById("mealProtein");
-const mealCarbs = document.getElementById("mealCarbs");
-const mealFats = document.getElementById("mealFats");
-
-const macroCanvas = document.getElementById("macroChart");
-const weeklyCanvas = document.getElementById("weeklyChart");
-
-const pieCht = macroCanvas ? macroCanvas.getContext("2d") : null;
-const weeklyCht = weeklyCanvas ? weeklyCanvas.getContext("2d") : null;
-
-const calorieGoalInput = document.getElementById("calorieGoal");
-const goalStatus = document.getElementById("goalStatus");
-
-let meals = loadMeals();
-let weeklyCalories = buildWeeklyCalories(meals);
-
-if (document.getElementById("calorieGoal")) {
-  document.getElementById("calorieGoal").value =
-    localStorage.getItem("goal") || "";
+function render() { const goals = account.goals; const today = buildTotals(meals.filter(m => m.date === todayKey())); const format = value => Math.round(value).toLocaleString(); $("todayCalories").textContent = format(today.calories); $("todayProtein").innerHTML = `${today.protein.toFixed(1)}<span>g</span>`; $("todayCarbs").innerHTML = `${today.carbs.toFixed(1)}<span>g</span>`; $("todayFats").innerHTML = `${today.fats.toFixed(1)}<span>g</span>`; $("calorieGoalText").textContent = `of ${format(goals.calories)} kcal goal`; $("proteinGoalText").textContent = `of ${goals.protein}g goal`; $("carbsGoalText").textContent = `of ${goals.carbs}g goal`; $("fatsGoalText").textContent = `of ${goals.fats}g goal`; $("calorieProgress").style.width = `${Math.min(100, today.calories / goals.calories * 100)}%`; $("goalCalories").textContent = `${format(goals.calories)} kcal`; $("goalProtein").textContent = `${goals.protein}g`; $("goalCarbs").textContent = `${goals.carbs}g`; $("goalFats").textContent = `${goals.fats}g`;
+  renderMeals(today); const dates = getRangeDates(chartRange); const totals = Object.fromEntries(dates.map(date => [date, getDateTotals(meals, date)])); const rangeTotal = buildTotals(dates.flatMap(date => meals.filter(meal => meal.date === date))); $("rangeSummary").textContent = `${rangeTotal.calories.toLocaleString()} kcal · ${rangeTotal.protein.toFixed(1)}g protein · ${rangeTotal.carbs.toFixed(1)}g carbs · ${rangeTotal.fats.toFixed(1)}g fat`; updateCharts(today, dates, totals, goals);
 }
-updateGoal();
+function renderMeals(today) { const list = $("mealList"); list.innerHTML = ""; const visible = meals.filter(m => m.date === todayKey()).sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || "")); $("emptyMeals").classList.toggle("hidden", visible.length > 0); visible.forEach(meal => { const item = document.createElement("div"); item.className = "meal-item"; item.innerHTML = `<div class="meal-icon">${meal.name.trim().charAt(0).toUpperCase()}</div><div class="meal-info"><strong>${escapeHtml(meal.name)}</strong><span>${Math.round(meal.calories)} kcal · ${Number(meal.protein).toFixed(1)}g protein · ${Number(meal.carbs).toFixed(1)}g carbs · ${Number(meal.fats).toFixed(1)}g fat</span><small>${Number(meal.fiber || 0).toFixed(1)}g fiber · ${Number(meal.sodium || 0).toFixed(0)}mg sodium · ${Number(meal.sugar || 0).toFixed(1)}g sugar</small></div><button class="icon-button" aria-label="Delete meal">×</button>`; item.querySelector("button").onclick = () => { meals = meals.filter(m => m.id !== meal.id); saveMeals(meals); render(); }; list.appendChild(item); }); }
+function escapeHtml(value) { const div = document.createElement("div"); div.textContent = value; return div.innerHTML; }
+$("addMealButton").onclick = () => { editingId = null; $("mealForm").reset(); $("mealDate").value = todayKey(); $("mealDialog").showModal(); };
+$("closeMeal").onclick = () => $("mealDialog").close(); $("mealForm").onsubmit = event => { event.preventDefault(); const entry = { id: editingId || crypto.randomUUID(), name: $("mealName").value.trim(), date: $("mealDate").value, calories: Number($("mealCalories").value), protein: Number($("mealProtein").value), carbs: Number($("mealCarbs").value), fats: Number($("mealFats").value), fiber: Number($("mealFiber").value || 0), saturatedFat: Number($("mealSaturatedFat").value || 0), sodium: Number($("mealSodium").value || 0), sugar: Number($("mealSugar").value || 0), createdAt: new Date().toISOString() }; if (Object.values(entry).some(v => v === "" || (typeof v === "number" && v < 0))) return; meals = meals.filter(m => m.id !== entry.id); meals.push(entry); saveMeals(meals); $("mealDialog").close(); render(); };
+function getProfile() { return account.profile || { age: 30, height: 170, weight: 70, gender: "female", activity: "moderate", goal: "maintain" }; }
+function openNeeds() { const p = getProfile(); const totalInches = p.heightIn != null ? Number(p.heightFt || 0) * 12 + Number(p.heightIn || 0) : Number(p.height || 170) / 2.54; $("profileAge").value = p.age; $("profileHeightFt").value = Math.floor(totalInches / 12); $("profileHeightIn").value = (totalInches % 12).toFixed(1); $("profileWeightLb").value = p.weightLb != null ? p.weightLb : (Number(p.weight || 70) / 0.453592).toFixed(1); $("profileGender").value = p.gender; $("profileActivity").value = p.activity; $("profileGoal").value = p.goal; $("needsResult").classList.add("hidden"); $("needsDialog").showModal(); }
+function openProfile() { $("profileName").value = account.name; $("profileDialog").showModal(); }
+$("openProfile").onclick = openNeeds; $("editGoal").onclick = openNeeds; $("accountSettings").onclick = openProfile; $("closeProfile").onclick = () => $("profileDialog").close(); $("closeNeeds").onclick = () => $("needsDialog").close(); $("profileForm").onsubmit = event => { event.preventDefault(); account.name = $("profileName").value.trim(); saveCurrentAccount(account); $("accountName").textContent = account.name; $("profileDialog").close(); }; $("needsForm").onsubmit = event => { event.preventDefault(); const feet = Number($("profileHeightFt").value); const inches = Number($("profileHeightIn").value); const weightLb = Number($("profileWeightLb").value); const profile = { age: Number($("profileAge").value), height: (feet * 12 + inches) * 2.54, weight: weightLb * 0.453592, heightFt: feet, heightIn: inches, weightLb, gender: $("profileGender").value, activity: $("profileActivity").value, goal: $("profileGoal").value }; account.profile = profile; account.goals = calculateNeeds(profile); saveCurrentAccount(account); const goalLabel = { lose: "weight loss", maintain: "weight maintenance", gain: "weight gain" }[profile.goal]; const activityLabel = $("profileActivity").selectedOptions[0].textContent.split(" — ")[0]; $("needsResult").innerHTML = `<p class="eyebrow">Calculation complete</p><h3>Your targets are based on:</h3><p>${profile.age} years old · ${feet}′ ${inches.toFixed(1)}″ · ${weightLb.toFixed(1)} lb · ${$("profileGender").selectedOptions[0].textContent}</p><p>${activityLabel} activity · Goal: ${goalLabel}</p><div class="calculation-breakdown"><span>Estimated maintenance calories<strong>${Math.round(account.goals.calories / ({ lose: 0.8, maintain: 1, gain: 1.1 }[profile.goal] || 1)).toLocaleString()} kcal</strong></span><span>Goal-adjusted calories<strong>${account.goals.calories.toLocaleString()} kcal</strong></span><span>Protein<strong>${account.goals.protein}g</strong></span><span>Carbs<strong>${account.goals.carbs}g</strong></span><span>Fat<strong>${account.goals.fats}g</strong></span></div><p class="helper-text">We estimate basal needs with Mifflin–St Jeor, multiply for ${activityLabel.toLowerCase()} activity, then adjust for ${goalLabel}. Your dashboard now uses these targets.</p>`; $("needsResult").classList.remove("hidden"); render(); };
+document.querySelectorAll(".range-button").forEach(button => button.onclick = () => { chartRange = button.dataset.range; document.querySelectorAll(".range-button").forEach(b => b.classList.toggle("active", b === button)); $("trendTitle").textContent = chartRange === "month" ? "Last 30 days" : "This week"; render(); });
+if (getCurrentAccount()) showApp(); else showAuth();
 
-if (pieCht && weeklyCht) {
-initCharts(pieCht, weeklyCht);
-updateCharts(meals, weeklyCalories);
-}
-renderMeals();
+function renderLibrary() { const query = $("librarySearch").value.trim().toLowerCase(); const category = $("libraryCategory").value; const results = mealLibrary.filter(meal => (!query || `${meal.name} ${meal.brand}`.toLowerCase().includes(query)) && (category === "all" || meal.category === category)); $("libraryResults").innerHTML = results.map((meal, index) => `<button class="library-card" data-index="${mealLibrary.indexOf(meal)}"><span class="library-card-top"><strong>${meal.name}</strong><small>${meal.brand}</small></span><span class="library-nutrition">${meal.calories} kcal · ${meal.protein}g protein · ${meal.carbs}g carbs · ${meal.fats}g fat</span><span class="library-source">${meal.source}</span></button>`).join("") || `<p class="empty-state">No matching meals found.</p>`; document.querySelectorAll(".library-card").forEach(card => card.onclick = () => { const meal = mealLibrary[Number(card.dataset.index)]; $("mealName").value = meal.name; $("mealCalories").value = meal.calories; $("mealProtein").value = meal.protein; $("mealCarbs").value = meal.carbs; $("mealFats").value = meal.fats; $("mealFiber").value = meal.fiber || 0; $("mealSaturatedFat").value = meal.saturatedFat || 0; $("mealSodium").value = meal.sodium || 0; $("mealSugar").value = meal.sugar || 0; $("mealDate").value = todayKey(); $("mealDialog").showModal(); }); }
+$("librarySearch").oninput = renderLibrary; $("libraryCategory").onchange = renderLibrary;
+function updateGoalLabels() { if (!account?.goals) return; $("goalFiber").textContent = `${Math.round(account.goals.fiber || account.goals.calories / 1000 * 14)}g`; $("goalSaturatedFat").textContent = `${Math.round(account.goals.saturatedFat || account.goals.calories * 0.1 / 9)}g`; $("goalSodium").textContent = `${Math.round(account.goals.sodium || 2300).toLocaleString()}mg`; $("goalSugar").textContent = `${Math.round(account.goals.sugar || account.goals.calories * 0.1 / 4)}g`; }
+$("needsForm").addEventListener("submit", () => setTimeout(updateGoalLabels, 0));
+setTimeout(updateGoalLabels, 0);
 
-
-const foodTypeFilter = document.getElementById("foodTypeFilter");
-
-async function handleSearch() {
-  const query = searchInput.value.trim();
-  searchResults.innerHTML = "";
-  if (!query) return;
-
-  const qLower = query.toLowerCase();
-  const typeChoice = foodTypeFilter ? foodTypeFilter.value : "all";
-
-  try {
-    const foods = await searchFoods(query);
-
-    let filtered = foods.filter(f => {
-      const desc = (f.description || "").toLowerCase();
-      if (qLower.includes("sandwich") && desc.includes("ice cream")) return false;
-      return true;
-    });
-
-    filtered = filtered.filter(f => {
-      const dt = (f.dataType || "").toLowerCase();
-
-      if (typeChoice === "packaged") {
-        return dt.includes("branded");
-      }
-
-      if (typeChoice === "restaurant") {
-        return dt.includes("survey");
-      }
-
-      return true;
-    });
-
-    for (const food of filtered) {
-      const card = document.createElement("div");
-      card.className = "search-result-item";
-
-      const title = food.description || "Unknown food";
-      const brand = food.brandOwner || food.brandName || "";
-      const type = food.dataType || "";
-
-      card.innerHTML = `
-        <div class="sr-top">
-          <div class="sr-title">${title}</div>
-          <div class="sr-badge">${type}</div>
-        </div>
-        <div class="sr-meta">${brand ? brand : "USDA FoodData Central"}</div>
-        <div class="sr-nutrition loading">Loading nutrition…</div>
-      `;
-
-      searchResults.appendChild(card);
-
-      getFoodDetails(food.fdcId)
-        .then(details => {
-          const n = details.foodNutrients || [];
-          const protein = getNutrientValueById(n, 1003);
-          const carbs = getNutrientValueById(n, 1005);
-          const fats = getNutrientValueById(n, 1004);
-          const energy = getNutrientValueById(n, 1008);
-          const calories = energy || (protein * 4 + carbs * 4 + fats * 9);
-
-          const nutLine = card.querySelector(".sr-nutrition");
-          nutLine.classList.remove("loading");
-          nutLine.textContent =
-            `${Math.round(calories)} kcal • Protein:${Math.round(protein)}g Carbs:${Math.round(carbs)}g Fats:${Math.round(fats)}g`;
-
-          card.onclick = () => {
-            mealName.value = details.description || title;
-            mealCalories.value = Math.round(calories);
-            mealProtein.value = Math.round(protein);
-            mealCarbs.value = Math.round(carbs);
-            mealFats.value = Math.round(fats);
-          };
-        })
-        .catch(err => {
-          console.error(err);
-          const nutLine = card.querySelector(".sr-nutrition");
-          nutLine.classList.remove("loading");
-          nutLine.textContent = "Nutrition unavailable for this item.";
-        });
-    }
-  } catch (err) {
-    console.error(err);
-    searchResults.textContent = "Search failed (check API key).";
-  }
-}
-
-function debounce(fn, delay) {
-  let timer;
-  return (...args) => {
-    clearTimeout(timer);
-    timer = setTimeout(() => fn(...args), delay);
-  };
-}
-
-searchInput.addEventListener("input", debounce(handleSearch, 400));
-
-
-mealForm.addEventListener("submit", e => {
-  e.preventDefault();
-
-  const meal = {
-    name: mealName.value,
-    calories: Number(mealCalories.value),
-    protein: Number(mealProtein.value),
-    carbs: Number(mealCarbs.value),
-    fats: Number(mealFats.value),
-    date: new Date().toISOString().slice(0, 10)
-  };
-
-  meals.push(meal);
-  saveMeals(meals);
-
-  weeklyCalories = buildWeeklyCalories(meals);
-
-  renderMeals();
-  updateCharts(meals, weeklyCalories);
-  updateGoal();
-
-  mealForm.reset();
-});
-
-
-function renderMeals() {
-  mealList.innerHTML = "";
-
-  meals.forEach((meal, index) => {
-    const div = document.createElement("div");
-    div.className = "meal-item";
-
-    div.innerHTML = `
-      <div>
-        <strong>${meal.name}</strong>
-        <div>${meal.calories} kcal</div>
-        <div>
-          Protein: ${meal.protein}g |
-          Carbs: ${meal.carbs}g |
-          Fats: ${meal.fats}g
-        </div>
-      </div>
-      
-      <div class="meal-actions">
-        <button class="edit-btn">Edit</button>
-        <button class="delete-btn">Delete</button>
-        </div>
-    `;
-
-    div.querySelector(".edit-btn").onclick = () => editMeal(index);
-
-    div.querySelector(".delete-btn").onclick = () => deleteMeal(index);
-    mealList.appendChild(div);
-  });
-}
-
-function editMeal(index) {
-    const meal = meals[index];
-
-    mealName.value = meal.name;
-    mealCalories.value = meal.calories;
-    mealProtein.value = meal.protein;
-    mealCarbs.value = meal.carbs;
-    mealFats.value = meal.fats;
-
-    meals.splice(index, 1);
-    saveMeals(meals);
-    weeklyCalories = buildWeeklyCalories(meals);
-
-    renderMeals();
-    updateCharts(meals, weeklyCalories);
-    updateGoal();
-}
-
-
-function deleteMeal(index) {
-    meals.splice(index, 1);
-    saveMeals(meals);
-    weeklyCalories = buildWeeklyCalories(meals);
-    renderMeals();
-    updateCharts(meals, weeklyCalories);
-    updateGoal();
-}
-
-function updateGoal() {
-  if (!calorieGoalInput || !goalStatus) return;
-
-  const goal = Number(calorieGoalInput.value);
-  if (!goal) {
-    goalStatus.textContent = "";
-    return;
-  }
-
-  const today = new Date().toISOString().slice(0, 10);
-  const consumed = weeklyCalories[today] || 0;
-
-  goalStatus.textContent =
-    consumed > goal
-      ? `Over goal by ${consumed - goal} kcal`
-      : `${goal - consumed} kcal remaining`;
-}
-
-if (calorieGoalInput) {
-  calorieGoalInput.addEventListener("change", () => {
-    localStorage.setItem("goal", calorieGoalInput.value);
-    updateGoal();
-  });
-}
+function setupUSDA() { if ($("usdaSearchButton")) return; $("librarySearch").insertAdjacentHTML("afterend", `<button id="usdaSearchButton" class="secondary-button" type="button">Search USDA</button>`); $("mealLibrary").insertAdjacentHTML("beforeend", `<div id="usdaResults" class="usda-results"></div>`); $("usdaSearchButton").onclick = searchUSDA; }
+async function searchUSDA() { const query = $("librarySearch").value.trim(); const results = $("usdaResults"); if (query.length < 2) { results.innerHTML = `<p class="helper-text">Type at least two characters to search USDA FoodData Central.</p>`; return; } results.innerHTML = `<p class="helper-text">Searching USDA…</p>`; try { const foods = await searchFoods(query); results.innerHTML = foods.slice(0, 8).map(food => { const n = food.foodNutrients || []; const calories = getNutrientValueById(n, 1008) || getNutrientValueById(n, 2047); const protein = getNutrientValueById(n, 1003); const carbs = getNutrientValueById(n, 1005); const fats = getNutrientValueById(n, 1004); const fiber = getNutrientValueById(n, 1079); const saturatedFat = getNutrientValueById(n, 1258) || getNutrientValueById(n, 606); const sodium = getNutrientValueById(n, 1093); const sugar = getNutrientValueById(n, 2000) || getNutrientValueById(n, 269); return `<button class="library-card usda-card" data-name="${escapeHtml(food.description || "USDA food")}" data-calories="${calories}" data-protein="${protein}" data-carbs="${carbs}" data-fats="${fats}" data-fiber="${fiber}" data-saturated-fat="${saturatedFat}" data-sodium="${sodium}" data-sugar="${sugar}"><span class="library-card-top"><strong>${escapeHtml(food.description || "USDA food")}</strong><small>${escapeHtml(food.dataType || "USDA FoodData Central")}</small></span><span class="library-nutrition">${Math.round(calories)} kcal · ${protein.toFixed(1)}g protein · ${carbs.toFixed(1)}g carbs · ${fats.toFixed(1)}g fat</span><span class="library-source">USDA values; verify serving size</span></button>`; }).join("") || `<p class="helper-text">No USDA foods found.</p>`; document.querySelectorAll(".usda-card").forEach(card => card.onclick = () => { $("mealName").value = card.dataset.name; $("mealCalories").value = Math.round(Number(card.dataset.calories)); $("mealProtein").value = Number(card.dataset.protein).toFixed(1); $("mealCarbs").value = Number(card.dataset.carbs).toFixed(1); $("mealFats").value = Number(card.dataset.fats).toFixed(1); $("mealFiber").value = Number(card.dataset.fiber).toFixed(1); $("mealSaturatedFat").value = Number(card.dataset.saturatedFat).toFixed(1); $("mealSodium").value = Number(card.dataset.sodium).toFixed(0); $("mealSugar").value = Number(card.dataset.sugar).toFixed(1); $("mealDate").value = todayKey(); $("mealDialog").showModal(); }); } catch { results.innerHTML = `<p class="helper-text">USDA search failed. Check your connection or API key.</p>`; } }

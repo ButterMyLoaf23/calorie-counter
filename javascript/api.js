@@ -1,25 +1,22 @@
-const FDC_API_KEY = "M58DZg98f89I7sid2hxfeXHBgEVNltDkp7gtBl48";
+const API_BASE = "/api/usda";
 
-export async function searchFoods(query) {
-    const url = `https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(query)}&pageSize=5&api_key=${FDC_API_KEY}`;
-
-    const response = await fetch(url);
-    if (!response.ok) throw new Error ("API failed");
-
+export async function searchFoods(query, options = {}) {
+    const params = new URLSearchParams({ query, pageSize: String(options.pageSize || 25), pageNumber: String(options.pageNumber || 1) });
+    if (options.dataType) params.set("dataType", options.dataType);
+    const response = await fetch(`${API_BASE}/search?${params}`);
+    if (!response.ok) throw new Error("Food search failed");
     const data = await response.json();
     return data.foods || [];
 }
 
 export async function getFoodDetails(fdcId) {
-    const url = `https://api.nal.usda.gov/fdc/v1/food/${fdcId}?api_key=${encodeURIComponent(FDC_API_KEY)}`;
-    const response = await fetch(url);
-    if (!response.ok) throw new Error("API Failed");
-    return await response.json();
+    const response = await fetch(`${API_BASE}/food/${encodeURIComponent(fdcId)}`);
+    if (!response.ok) throw new Error("Food details request failed");
+    return response.json();
 }
 
 export function getNutrientValueById(nutrients, id) {
     if (!Array.isArray(nutrients)) return 0;
-
-    const found = nutrients.find(nutrients => nutrients.nutrientId === id || nutrients.nutrient?.id === id || nutrients.nutrient?.number === String(id));
+    const found = nutrients.find(item => item.nutrientId === id || item.nutrient?.id === id || item.nutrient?.number === String(id));
     return Number(found?.value ?? found?.amount ?? 0) || 0;
 }

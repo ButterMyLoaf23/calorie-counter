@@ -1,95 +1,22 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calorie & Macro Tracker</title>
-    <link rel="stylesheet" href="./css/styles.css"/>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NutriTrack — Calorie & Macro Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./css/styles.css" />
 </head>
-<body>
-    <header>Calorie & Macro Tracker</header>
-
-    <section>
-        <h2>Search Food Databases</h2>
-
-        <label for = "foodTypeFilter">Food type</label>
-        <select id="foodTypeFilter">
-            <option value="all">All</option>
-            <option value="Branded">Branded</option>
-            <option value=" Restaurant">Restaurant</option>
-        </select>
-
-        <input
-            id="searchInput"
-            type="text"
-            placeholder="Search for foods"
-            autocomplete="off"
-        />
-        <div id="searchResults"></div>
-    </section>
-    <section>
-        <h2>Add Meal</h2>
-
-        <form id="mealForm">
-            <input id="mealName" placeholder="Meal name" required />
-            <h3>Calories:</h3>
-            <input
-                id="mealCalories"
-                type="number"
-                placeholder="Calories"
-                required
-            />
-            <h3>Protein:</h3>
-            <input
-                id="mealProtein"
-                type="number"
-                placeholder="Protein (g)"
-                required
-            />
-            <h3>Carbohydrates:</h3>
-            <input
-                id="mealCarbs"
-                type="number"
-                placeholder="Carbs (g)"
-                required
-            />
-            <h3>Fats:</h3>
-            <input
-                id="mealFats"
-                type="number"
-                placeholder="Fats (g)"
-                required
-            />
-
-            <button type="submit">Add meal</button>
-        </form>
-    </section>
-    <section>
-        <h2>Meals This Week</h2>
-        <div id="mealList"></div>
-    </section>
-    <section class="chart-card">
-        <h2>Macros Breakdown</h2>
-        <div class="chart-wrap chart-pie">
-            <canvas id="macroChart"></canvas>
-        </div>
-    </section>
-    <section class="chart-card"> 
-        <h2>Calories This Week</h2>
-        <input
-        id="calorieGoal"
-        type="number"
-        placeholder="Daily Calorie Goal"
-        />
-        <div id="goalStatus"></div>
-        <div class="chart-wrap chart-line">
-            <canvas id="weeklyChart"></canvas>
-        </div>
-    </section>
-
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <script type="module" src="./javascript/main.js"></script>
-    
-</body>
-</html>
+<body><main class="app-shell">
+  <section id="authView" class="auth-view"><div class="auth-brand">NutriTrack</div><div class="auth-card"><p class="eyebrow">Nutrition tracker</p><h1>Track your meals<br><em>and daily targets.</em></h1><p class="muted">Keep your meals, nutrition targets, and progress in one place.</p><form id="authForm" class="stack-form"><label id="usernameField">Username<input id="authUsername" type="text" minlength="2" maxlength="24" placeholder="Choose a username" required></label><label>Email<input id="authEmail" type="email" placeholder="you@example.com" required></label><label>Password<input id="authPassword" type="password" minlength="8" placeholder="At least 8 characters" required></label><button id="authSubmit" type="submit">Create account</button></form><button id="authToggle" class="text-button" type="button">Already have an account? Sign in</button><p id="authMessage" class="form-message" role="status"></p></div></section>
+  <section id="appView" class="hidden"><header class="topbar"><div class="brand">NutriTrack</div><div class="account-menu"><span id="accountEmail"></span><button id="signOut" class="text-button">Sign out</button></div></header><div class="page-content">
+    <section class="hero-row"><div><p class="eyebrow">Dashboard</p><h1><span id="accountName">Your</span>'s nutrition</h1><p class="muted" id="todayLabel"></p><p class="calculator-hint">Set your measurements and activity to calculate daily targets.</p></div><div class="hero-actions"><button id="openProfile" class="secondary-button">Calculate needs</button><button id="accountSettings" class="text-button">Account settings</button></div></section>
+    <section class="summary-grid"><article class="summary-card accent"><span class="summary-label">Calories today</span><strong id="todayCalories">0</strong><span class="summary-sub" id="calorieGoalText">of 2,000 kcal goal</span><div class="progress"><span id="calorieProgress"></span></div></article><article class="summary-card"><span class="summary-label">Protein</span><strong id="todayProtein">0<span>g</span></strong><span class="summary-sub" id="proteinGoalText">of 150g goal</span></article><article class="summary-card"><span class="summary-label">Carbs</span><strong id="todayCarbs">0<span>g</span></strong><span class="summary-sub" id="carbsGoalText">of 220g goal</span></article><article class="summary-card"><span class="summary-label">Fats</span><strong id="todayFats">0<span>g</span></strong><span class="summary-sub" id="fatsGoalText">of 65g goal</span></article></section>
+    <section class="dashboard-grid"><div class="main-column"><article class="panel"><div class="panel-heading"><div><p class="eyebrow">Meals</p><h2>Today's meals</h2></div><button id="addMealButton">Add meal</button></div><div id="mealList" class="meal-list"></div><p id="emptyMeals" class="empty-state">No meals logged today.</p></article><article class="panel chart-panel"><div class="panel-heading"><div><p class="eyebrow">History</p><h2 id="trendTitle">This week</h2></div><div class="range-switcher"><button class="range-button active" data-range="week">Week</button><button class="range-button" data-range="month">Month</button></div></div><div class="chart-wrap"><canvas id="trendChart"></canvas></div><p id="rangeSummary" class="range-summary"></p></article></div><aside class="side-column"><article class="panel needs-progress-panel"><div class="panel-heading"><div><p class="eyebrow">Daily progress</p><h2>Targets</h2></div></div><div class="needs-chart-wrap"><canvas id="needsChart"></canvas></div><p class="goal-explanation">Percent used today, based on your targets.</p></article><article class="panel goal-panel"><p class="eyebrow">Nutrition targets</p><h2>Daily needs</h2><p class="goal-explanation">Based on your measurements, activity, and goal.</p><div class="goal-row"><span>Calories</span><strong id="goalCalories">2,000 kcal</strong></div><div class="goal-row"><span>Protein</span><strong id="goalProtein">150g</strong></div><div class="goal-row"><span>Carbs</span><strong id="goalCarbs">220g</strong></div><div class="goal-row"><span>Fats</span><strong id="goalFats">65g</strong></div><button id="editGoal" class="secondary-button full-width">Update targets</button></article></aside></section>
+  </div></section>
+</main><section id="mealLibrary" class="library-panel hidden"><div class="library-heading"><div><p class="eyebrow">Quick add</p><h2>Meal library</h2><p class="muted">Choose a popular meal or homemade staple to prefill your log.</p></div><div class="library-filters"><input id="librarySearch" type="search" placeholder="Search meals…"><select id="libraryCategory"><option value="all">All meals</option><option value="restaurant">Restaurant</option><option value="homemade">Homemade</option></select></div></div><div id="libraryResults" class="library-results"></div></section>
+<dialog id="mealDialog"><form id="mealForm" method="dialog" class="dialog-card"><div class="dialog-heading"><div><p class="eyebrow">Nutrition log</p><h2>Add a meal</h2></div><button type="button" class="close-button" id="closeMeal">×</button></div><label>Meal name<input id="mealName" required placeholder="e.g. Chicken burrito bowl"></label><label>Date<input id="mealDate" type="date" required></label><div class="input-grid"><label>Calories (kcal)<input id="mealCalories" type="number" min="0" step="1" required></label><label>Protein (g)<input id="mealProtein" type="number" min="0" step="0.1" required></label><label>Carbs (g)<input id="mealCarbs" type="number" min="0" step="0.1" required></label><label>Fats (g)<input id="mealFats" type="number" min="0" step="0.1" required></label></div><p class="helper-text">Use the nutrition label or USDA result for the serving you actually ate. Decimal grams are supported for more accurate tracking.</p><button type="submit">Save meal</button></form></dialog>
+<dialog id="profileDialog"><form id="profileForm" method="dialog" class="dialog-card"><div class="dialog-heading"><div><p class="eyebrow">Account settings</p><h2>Daily targets</h2></div><button type="button" class="close-button" id="closeProfile">×</button></div><label>Display name<input id="profileName" required placeholder="Your name"></label><div class="input-grid"><label>Calories<input id="profileCalories" type="number" min="1" required></label><label>Protein (g)<input id="profileProtein" type="number" min="0" step="0.1" required></label><label>Carbs (g)<input id="profileCarbs" type="number" min="0" step="0.1" required></label><label>Fats (g)<input id="profileFats" type="number" min="0" step="0.1" required></label></div><button type="submit">Save targets</button></form></dialog>
+<dialog id="needsDialog"><form id="needsForm" class="dialog-card"><div class="dialog-heading"><div><p class="eyebrow">Personal calculator</p><h2>Calculate your needs</h2></div><button type="button" class="close-button" id="closeNeeds">×</button></div><div id="needsResult" class="needs-result hidden"></div><button type="submit">Calculate and save targets</button></form></dialog>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script><script type="module" src="./javascript/main.js"></script>
+</body></html>

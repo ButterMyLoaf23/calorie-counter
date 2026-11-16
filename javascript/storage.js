@@ -1,17 +1,18 @@
-const STORAGE_KEY = "meals";
-
-export function loadMeals() {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-}
-
-export function saveMeals(meals) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(meals));
-}
-
-export function buildWeeklyCalories(meals) {
-    const weekly = {};
-    meals.forEach(meal => {
-        weekly[meal.date] = (weekly[meal.date] || 0) + meal.calories;
-    });
-    return weekly;
-}
+const ACCOUNTS_KEY = "nutritrack.accounts";
+const SESSION_KEY = "nutritrack.session";
+const read = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } };
+const write = (key, value) => localStorage.setItem(key, JSON.stringify(value));
+export const todayKey = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+export function calculateNeeds(profile) { const age = Number(profile.age); const height = Number(profile.height); const weight = Number(profile.weight); const sexAdjustment = profile.gender === "male" ? 5 : profile.gender === "other" ? -78 : -161; const bmr = 10 * weight + 6.25 * height - 5 * age + sexAdjustment; const activityMultiplier = { sedentary: 1.2, light: 1.375, moderate: 1.55, very: 1.725, athlete: 1.9 }[profile.activity] || 1.2; const maintenanceCalories = bmr * activityMultiplier; const goalAdjustment = { lose: 0.8, maintain: 1, gain: 1.1 }[profile.goal] || 1; const calories = Math.max(1200, Math.round(maintenanceCalories * goalAdjustment / 10) * 10); const protein = Math.round(weight * (profile.goal === "lose" ? 1.8 : 1.6)); const fats = Math.round(calories * 0.25 / 9); const carbs = Math.max(0, Math.round((calories - protein * 4 - fats * 9) / 4)); const fiber = Math.round(calories / 1000 * 14); const saturatedFat = Math.round(calories * 0.1 / 9); const sodium = 2300; const sugar = Math.round(calories * 0.1 / 4); return { calories, protein, carbs, fats, fiber, saturatedFat, sodium, sugar, bmr: Math.round(bmr), maintenanceCalories: Math.round(maintenanceCalories), activityMultiplier, goalAdjustment }; }
+export function getAccounts() { return read(ACCOUNTS_KEY, {}); }
+export function getSession() { return localStorage.getItem(SESSION_KEY); }
+export function createAccount(email, password, username) { const accounts = getAccounts(); const key = email.trim().toLowerCase(); const cleanUsername = username.trim(); if (password.length < 8) throw new Error("Password must be at least 8 characters."); if (!/^[a-zA-Z0-9_ .-]{2,24}$/.test(cleanUsername)) throw new Error("Username must be 2–24 characters and use letters, numbers, spaces, ., -, or _."); if (accounts[key]) throw new Error("An account with this email already exists."); if (Object.values(accounts).some(account => account.username?.toLowerCase() === cleanUsername.toLowerCase())) throw new Error("That username is already taken."); const profile = { age: 30, height: 170, weight: 70, gender: "female", activity: "moderate", goal: "maintain" }; accounts[key] = { email: key, password, username: cleanUsername, name: cleanUsername, profile, meals: [], goals: calculateNeeds(profile) }; write(ACCOUNTS_KEY, accounts); localStorage.setItem(SESSION_KEY, key); return accounts[key]; }
+export function signIn(email, password) { const key = email.trim().toLowerCase(); const account = getAccounts()[key]; if (!account || account.password !== password) throw new Error("Email or password is incorrect."); localStorage.setItem(SESSION_KEY, key); return account; }
+export function signOut() { localStorage.removeItem(SESSION_KEY); }
+export function getCurrentAccount() { const key = getSession(); return key ? getAccounts()[key] || null : null; }
+export function saveCurrentAccount(account) { const accounts = getAccounts(); accounts[account.email] = account; write(ACCOUNTS_KEY, accounts); }
+export function loadMeals() { return getCurrentAccount()?.meals || []; }
+export function saveMeals(meals) { const account = getCurrentAccount(); if (account) { account.meals = meals; saveCurrentAccount(account); } }
+export function buildTotals(meals) { return meals.reduce((t, m) => ({ calories: t.calories + Number(m.calories || 0), protein: t.protein + Number(m.protein || 0), carbs: t.carbs + Number(m.carbs || 0), fats: t.fats + Number(m.fats || 0), fiber: t.fiber + Number(m.fiber || 0), saturatedFat: t.saturatedFat + Number(m.saturatedFat || 0), sodium: t.sodium + Number(m.sodium || 0), sugar: t.sugar + Number(m.sugar || 0) }), { calories: 0, protein: 0, carbs: 0, fats: 0, fiber: 0, saturatedFat: 0, sodium: 0, sugar: 0 }); }
+export function getDateTotals(meals, date) { return buildTotals(meals.filter(m => m.date === date)); }
+export function getRangeDates(range) { const count = range === "month" ? 30 : 7; const dates = []; for (let i = count - 1; i >= 0; i--) { const d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() - i); dates.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`); } return dates; }

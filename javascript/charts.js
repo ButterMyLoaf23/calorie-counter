@@ -1,64 +1,6 @@
-let macroPieChart;
-let weeklyChart;
-
-export function initCharts(pieCht, weeklyCht) {
-    macroPieChart = new Chart(pieCht, {
-        type: "pie",
-        data: {
-            labels: ["Protein", "Carbs", "Fats"],
-            datasets: [{data: [0, 0, 0]}]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { position : "bottom" }
-            }
-        
-        }
-    });
-    
-        weeklyChart = new Chart (weeklyCht, {
-        type: "bar",
-        data: {
-            labels: [],
-            datasets: [{label: "Calories", data: [] }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false
-        }
-    });
+let trendChart; let needsChart;
+export function initCharts() {
+  trendChart = new Chart(document.getElementById("trendChart"), { type: "bar", data: { labels: [], datasets: [{ label: "Calories", data: [], borderRadius: 7, backgroundColor: "#2f8f83", maxBarThickness: 34 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, grid: { color: "#e8eeeb" }, ticks: { color: "#81908b" } }, x: { grid: { display: false }, ticks: { color: "#81908b", maxTicksLimit: 10 } } }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => `${c.raw.toLocaleString()} kcal` } } } } });
+  needsChart = new Chart(document.getElementById("needsChart"), { type: "bar", data: { labels: ["Calories", "Protein", "Carbs", "Fat", "Fiber", "Sat. fat", "Sodium", "Sugar"], datasets: [{ data: [0, 0, 0, 0, 0, 0, 0, 0], backgroundColor: ["#2f8f83", "#2563eb", "#f59e0b", "#ef6b5b", "#8b5cf6", "#ec4899", "#64748b", "#eab308"], borderRadius: 6, barThickness: 12 }] }, options: { indexAxis: "y", responsive: true, maintainAspectRatio: false, scales: { x: { beginAtZero: true, max: 100, grid: { color: "#e8eeeb" }, ticks: { color: "#81908b", callback: value => `${value}%` } }, y: { grid: { display: false }, ticks: { color: "#18332e", font: { size: 10 } } } }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => `${Math.round(c.raw)}% of target` } } } } });
 }
-
-export function updateCharts(meals, weeklyCalories) {
-    const totals = meals.reduce((acc, meal) => {
-        acc.protein += meal.protein;
-        acc.carbs += meal.carbs;
-        acc.fats += meal.fats;
-        return acc;
-    }, {protein: 0, carbs: 0, fats: 0});
-
-    macroPieChart.data.datasets[0].data = [
-        totals.protein,
-        totals.carbs,
-        totals.fats
-    ];
-
-    macroPieChart.update();
-
-    const labels = [];
-    const data = [];
-    
-    for (let i=6; i>=0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        const key = date.toISOString().slice(0,10);
-        labels.push(key);
-        data.push(weeklyCalories[key] || 0);
-    }
-
-    weeklyChart.data.labels = labels;
-    weeklyChart.data.datasets[0].data = data;
-    weeklyChart.update();
-}
+export function updateCharts(today, dates, dateTotals, goals) { const fiberGoal = goals.fiber || goals.calories / 1000 * 14; const saturatedFatGoal = goals.saturatedFat || goals.calories * 0.1 / 9; const sodiumGoal = goals.sodium || 2300; const sugarGoal = goals.sugar || goals.calories * 0.1 / 4; trendChart.data.labels = dates.map(d => new Date(`${d}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" })); trendChart.data.datasets[0].data = dates.map(d => dateTotals[d]?.calories || 0); trendChart.update(); needsChart.data.datasets[0].data = [today.calories / goals.calories * 100, today.protein / goals.protein * 100, today.carbs / goals.carbs * 100, today.fats / goals.fats * 100, today.fiber / fiberGoal * 100, today.saturatedFat / saturatedFatGoal * 100, today.sodium / sodiumGoal * 100, today.sugar / sugarGoal * 100]; needsChart.update(); }
