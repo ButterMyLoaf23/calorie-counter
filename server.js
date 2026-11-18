@@ -15,6 +15,9 @@ const fdcBaseUrl = "https://api.nal.usda.gov/fdc/v1";
 if (!fdcApiKey) console.warn("FDC_API_KEY is not configured. USDA search will return an error until it is set.");
 
 app.disable("x-powered-by");
+// Render places the original client IP in X-Forwarded-For. Trust its single
+// reverse-proxy hop so rate limiting can identify clients correctly.
+app.set("trust proxy", 1);
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.json({ limit: "100kb" }));
 
